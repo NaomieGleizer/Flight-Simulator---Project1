@@ -3,11 +3,12 @@
 #include <vector>
 #include <map>
 #include "Expression.h"
-#include "E"
+#include "ExpressionCommand.h"
+#include "OpenDataServerCommand.h"
 
 using namespace std;
 
-map<string, Expression> commands = {("openDataServer", newE)};
+map<string, Expression> commands = { {"openDataServer", new ExpressionCommand(new OpenDataServerCommand())} };
 
 class ReadLines {
 
