@@ -6,4 +6,10 @@ ExpressionCommand::ExpressionCommand(Command* command) {
 
 double ExpressionCommand::calculate() {
     command->execute();
+    return 1.0;
 }
+
+Command* ExpressionCommand::getCommand() {
+    return command;
+}
+

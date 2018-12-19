@@ -1,0 +1,9 @@
+﻿  ReadLines.cpp
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\readlines.cpp(56): warning C4018: '<': signed/unsigned mismatch
+  Generating Code...
+  Compiling...
+  test.cpp
+  Generating Code...
+test.obj : error LNK2005: "class std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class Expression,struct std::less<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > >,class std::allocator<struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class Expression> > > commands" (?commands@@3V?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@VExpression@@U?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@VExpression@@@std@@@2@@std@@A) already defined in ReadLines.obj
+test.obj : error LNK2005: "class std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,double,struct std::less<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > >,class std::allocator<struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,double> > > symbolTbl" (?symbolTbl@@3V?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@NU?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@N@std@@@2@@std@@A) already defined in ReadLines.obj
+C:\Users\naomie\Documents\בר אילן\תכנות מתקדם\ProjectA\Debug\ProjectA.exe : fatal error LNK1169: one or more multiply defined symbols found

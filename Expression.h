@@ -2,5 +2,5 @@
 
 class Expression {
 public:
-    virtual double calculate();
+    virtual double calculate() { return 0; };
 };

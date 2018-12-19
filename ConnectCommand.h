@@ -1,8 +1,7 @@
 #pragma once
 #include "Command.h"
 
-class OpenDataServerCommand : public Command {
-    vector<double> params;
+class ConnectCommand : public Command {
 public:
     void execute();
     void setParams(vector<double> params);

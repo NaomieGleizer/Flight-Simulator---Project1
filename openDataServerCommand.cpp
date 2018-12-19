@@ -1,7 +1,12 @@
 #include "OpenDataServerCommand.h"
 #include <thread>
 
- void OpenDataServerCommand::execute(vector<string> params) {
+
+void OpenDataServerCommand::setParams(vector<double> params) {
+    this->params = params;
+}
+
+ void OpenDataServerCommand::execute() {
 
         if (params.size() != 2) {
             printf("Open data server command requires 2 parameters");
@@ -9,8 +14,8 @@
 
         }
 
-        int port = stoi(params[0]);
-        int hz = stoi(params[1]);
+        double port = params[0];
+        double hz = params[1];
         //thread t = openServer(port, hz);
     
 }

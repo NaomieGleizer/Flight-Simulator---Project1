@@ -1,11 +1,14 @@
 #include "ReadLines.h"
-#include <sstream>
-#include <iostream>
 #include <stack>
 #include <deque>
+#include "Power.h"
+#include "Minus.h"
+#include "Plus.h"
+#include "Multiplication.h"
+#include "Division.h"
+#include "Number.h"
 
 map<char, int> operators = { { '^', 4 },{ '/', 3 },{ '*', 3 },{ '+', 2 },{ '-', 2 } };
-
 
 /*
 *   The function gets a string which is a command line from the user and seperates it.
@@ -43,20 +46,52 @@ vector<string> ReadLines::lexer(string line) {
 }
 
 void ReadLines::parser(vector<string> line) {
-    if (commands.count(line[0]) == 0) {
+    vector<double> params;
+
+    if (commands.count(line[0]) == 0) { // chek if the command exists
         return;
     }
-    Expression e = commands[line[0]];
-    //line.erase(line.begin());
-    //e.calculate();
+    Expression expCommand = commands[line[0]];
+
     for (int i = 1; i < line.size() - 2; i++) { // for each parameter
         deque<char> queue = shuntingYard(line[i]);
+        Expression param = expressionFromString(queue);
+        params.push_back(param.calculate());
     }
+    //expCommand.setParams(params);
+    expCommand.calculate();
 }
 
+Expression ReadLines::expressionFromString(deque<char> queue) {
+    if (queue.size() == 1) {
+        return Number((double)(queue.back() - '0'));
+    }
 
+    char c = queue.back();
+    Number leftNumber((double)(queue.front() - '0'));
+    queue.pop_back();
+    queue.pop_front();
+    switch (c) {
+    case '^':
+        return Power(leftNumber, expressionFromString(queue));
 
-deque<char> shuntingYard(string expression) {
+    case '*':
+        return Multiplication(leftNumber, expressionFromString(queue));
+
+    case '/':
+        return Division(leftNumber, expressionFromString(queue));
+
+    case '+':
+        return Plus(leftNumber, expressionFromString(queue));
+
+    case '-':
+        return Minus(leftNumber, expressionFromString(queue));
+    }
+    return Number((double)(queue.back() - '0'));
+
+}
+
+deque<char> ReadLines::shuntingYard(string expression) {
     stack<char> stack;
     deque<char> queue;
     string::iterator it = expression.begin();
@@ -93,7 +128,7 @@ deque<char> shuntingYard(string expression) {
         *it++;
     }
     // there's no more token to be read
-    while (!stack.empty) { // while there's an operator at the top of the stack
+    while (!stack.empty()) { // while there's an operator at the top of the stack
         queue.push_back(stack.top()); // push it to the queue
         stack.pop();                  // pop operator from stack
     }

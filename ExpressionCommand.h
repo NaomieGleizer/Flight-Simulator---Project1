@@ -5,8 +5,9 @@
 
 class ExpressionCommand : public Expression {
     Command* command;
+    vector<double> params;
 public:
     ExpressionCommand(Command* command);
-
+    Command* getCommand();
     double calculate();
 };
