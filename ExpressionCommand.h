@@ -9,5 +9,5 @@ class ExpressionCommand : public Expression {
 public:
     ExpressionCommand(Command* command);
     Command* getCommand();
-    double calculate();
+    double calculate() override;
 };

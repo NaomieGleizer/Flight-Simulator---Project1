@@ -9,6 +9,12 @@
 #include "Number.h"
 
 map<char, int> operators = { { '^', 4 },{ '/', 3 },{ '*', 3 },{ '+', 2 },{ '-', 2 } };
+map<string, Expression> commands = {
+    { "openDataServer", ExpressionCommand(new OpenDataServerCommand()) }//,
+    //{"connect", ExpressionCommand(new ConnectCommand())}
+};
+
+map<string, double> symbolTbl;
 
 /*
 *   The function gets a string which is a command line from the user and seperates it.
@@ -19,6 +25,7 @@ vector<string> ReadLines::lexer(string line) {
     string command = "";
     while (*it != 32 && *it != 9) { // command (first word)
         command += *it;
+        it++;
     }
     splittedStrings.push_back(command);
 
@@ -29,7 +36,7 @@ vector<string> ReadLines::lexer(string line) {
             last = param.at(param.size() - 1); // last character inserted
         }
         if (*it == 32 || *it == 9) { // if it's a space or a tab, check if it's the end of the parameter
-            if (operators.count(last) == 0) {
+            if (operators.count(last) == 0 && param != "") {
                 // end of parameter
                 splittedStrings.push_back(param); // insert the parameter to the vector
                 param = ""; // new parameter
@@ -41,7 +48,7 @@ vector<string> ReadLines::lexer(string line) {
         param += *it; // add char to the current parameter
         it++;
     }
-
+    splittedStrings.push_back(param);
     return splittedStrings;
 }
 
@@ -53,8 +60,8 @@ void ReadLines::parser(vector<string> line) {
     }
     Expression expCommand = commands[line[0]];
 
-    for (int i = 1; i < line.size() - 2; i++) { // for each parameter
-        deque<char> queue = shuntingYard(line[i]);
+    for (int i = 1; i <= line.size() - 1; i++) { // for each parameter
+        deque<string> queue = shuntingYard(line[i]);
         Expression param = expressionFromString(queue);
         params.push_back(param.calculate());
     }
@@ -62,40 +69,48 @@ void ReadLines::parser(vector<string> line) {
     expCommand.calculate();
 }
 
-Expression ReadLines::expressionFromString(deque<char> queue) {
+Expression ReadLines::expressionFromString(deque<string> queue) {
     if (queue.size() == 1) {
-        return Number((double)(queue.back() - '0'));
+        return Number((double)(stoi(queue.back())));
     }
 
-    char c = queue.back();
-    Number leftNumber((double)(queue.front() - '0'));
+    string s = queue.back();
+    Number leftNumber((double)(stoi(queue.front())));
     queue.pop_back();
     queue.pop_front();
-    switch (c) {
-    case '^':
+
+    if (s.compare("^") == 0) {
         return Power(leftNumber, expressionFromString(queue));
+    }
 
-    case '*':
-        return Multiplication(leftNumber, expressionFromString(queue));
+    else if (s.compare("*") == 0) {
+        Expression e = expressionFromString(queue);
+        return Multiplication(leftNumber, e);
+    }
 
-    case '/':
+    else if (s.compare("/") == 0) {
         return Division(leftNumber, expressionFromString(queue));
+    }
 
-    case '+':
+    else if (s.compare("+") == 0) {
         return Plus(leftNumber, expressionFromString(queue));
+    }
 
-    case '-':
+    else if (s.compare("*") == 0) {
         return Minus(leftNumber, expressionFromString(queue));
     }
-    return Number((double)(queue.back() - '0'));
+    else {
+        return Number((double)(stoi(queue.back())));
+    }
 
 }
 
-deque<char> ReadLines::shuntingYard(string expression) {
+deque<string> ReadLines::shuntingYard(string expression) {
     stack<char> stack;
-    deque<char> queue;
+    deque<string> queue;
     string::iterator it = expression.begin();
     char topStack;
+    string currentNumber = "";
     while (it != expression.end()) { // while there are tokens to be read
 
         if (*it == '(') {
@@ -103,18 +118,20 @@ deque<char> ReadLines::shuntingYard(string expression) {
         }
 
         else if (operators.count(*it)) { // if it's an operator
-            topStack = stack.top();
-            while (operators[topStack] > operators[*it]) { // while there's an operator at top of the stack with greater precedence
-                stack.pop();               // pop operator from stack
-                queue.push_back(topStack); // push it to the queue
+            if (!stack.empty()) {
                 topStack = stack.top();
+                while (operators[topStack] > operators[*it]) { // while there's an operator at top of the stack with greater precedence
+                    stack.pop();               // pop operator from stack
+                    queue.push_back(string(1, topStack)); // push it to the queue
+                    topStack = stack.top();
+                }
             }
             stack.push(*it);
         }
 
         else if (*it == ')') {
             while (stack.top() != '(') { // while there's not a '(' at the top of the stack
-                queue.push_back(stack.top()); // push it to the queue
+                queue.push_back(string(1, stack.top())); // push it to the queue
                 stack.pop();                  // pop operator from stack
 
             }
@@ -122,14 +139,21 @@ deque<char> ReadLines::shuntingYard(string expression) {
         }
 
         else { // it is a number
-            queue.push_back(*it); // push it to the stack
+            currentNumber += *it;
+            while ((++it)!= expression.end()&& *it >= 48 && *it <= 57) { // while the char is a number
+                currentNumber += *it;
+         
+            }
+            queue.push_back(currentNumber);  // push the number to queue
+            currentNumber = "";
+            it--;
         }
 
-        *it++;
+        it++;
     }
     // there's no more token to be read
     while (!stack.empty()) { // while there's an operator at the top of the stack
-        queue.push_back(stack.top()); // push it to the queue
+        queue.push_back(string(1, stack.top())); // push it to the queue
         stack.pop();                  // pop operator from stack
     }
     return queue;

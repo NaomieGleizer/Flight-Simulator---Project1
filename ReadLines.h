@@ -1,4 +1,7 @@
 #pragma once
+#ifndef READLINES_H
+#define READLINES_H
+
 #include <string>
 #include <vector>
 #include <map>
@@ -10,18 +13,16 @@
 
 using namespace std;
 
-map<string, Expression> commands;// = {
-    //{"openDataServer", ExpressionCommand(new OpenDataServerCommand())}//,
-    //{"connect", ExpressionCommand(new ConnectCommand())}
-//};
 
-map<string, double> symbolTbl;
 
 class ReadLines {
 
 public:
     vector<string> lexer(string line);
     void parser(vector<string> line);
-    deque<char> shuntingYard(string expression);
-    Expression expressionFromString(deque<char> queue);
+    deque<string> shuntingYard(string expression);
+    Expression expressionFromString(deque<string> queue);
 };
+
+#endif 
+
