@@ -8,7 +8,7 @@
 #include "Division.h"
 #include "Number.h"
 
-map<char, int> operators = { { '^', 4 },{ '/', 3 },{ '*', 3 },{ '+', 2 },{ '-', 2 } };
+map<string, int> operators = { { "^", 4 },{ "/", 3 },{ "*", 3 },{ "+", 2 },{ "-", 2 } };
 map<string, ExpressionCommand*> commands = {
     { "openDataServer", new ExpressionCommand(new OpenDataServerCommand()) }//,
     //{"connect", ExpressionCommand(new ConnectCommand())}
@@ -31,7 +31,7 @@ vector<string> ReadLines::lexer(string line) {
 
     string param = "";
     char last = 0;
-    bool isComma=false;
+    bool isComma = false;
     while (it != line.end()) {
         if (param.size() != 0) {
             last = param.at(param.size() - 1); // last character inserted
@@ -42,7 +42,7 @@ vector<string> ReadLines::lexer(string line) {
             }
             it++; // skip char
             // if last char wasn't an operator or current char isn't an operator, or if there is a comma
-            if ((operators.count(last) == 0 && operators.count(*it)==0 && param != "") || isComma) {
+            if ((operators.count(string(1, last)) == 0 && operators.count(string(1, *it)) == 0 && param != "") || isComma) {
                 // end of parameter
                 splittedStrings.push_back(param); // insert the parameter to the vector
                 param = ""; // new parameter
@@ -66,76 +66,116 @@ void ReadLines::parser(vector<string> line) {
     ExpressionCommand* expCommand = commands[line[0]];
 
     for (int i = 1; i <= line.size() - 1; i++) { // for each parameter
+        // take care of negativr numbers in the parameter
+        line[i] = negativeNumberToMinus(line[i]);
         deque<string> queue = shuntingYard(line[i]);
-        Expression* param = expressionFromString(queue);
-        params.push_back((*param).calculate());
+        double param = expressionFromString(queue);
+        params.push_back(param);
     }
     expCommand->setParams(params);
     (*expCommand).calculate();
 }
 
-Expression* ReadLines::expressionFromString(deque<string> queue) {
-    if (queue.size() == 1) {
-        return new Number((double)(stoi(queue.back())));;
+/*
+* Change the negative number in the expression to 0-x.
+* For example: -3+4 -> (0-3)+4.   9*-8 -> 9*(0-8).  6+(-4) -> 6+(0-4)
+*/
+string ReadLines::negativeNumberToMinus(string line) {
+    string::iterator it = line.begin();
+    string minus0 = "";
+    char last = 0;
+    while (it != line.end()) {
+        if ((*it) == '-' && (last == 0 || operators.count(string(1, last)) || last == '(')) {
+            if (last == '(') {
+                minus0 = "0";
+                line.insert(it, minus0.begin(), minus0.end());
+                it += 3; // skip the '-', the number and the ')'
+            }
+            else {
+                minus0 = "(0";
+                line.insert(it, minus0.begin(), minus0.end());
+                it += 4; // skip the '(', the 0, the '-' and the number
+                minus0 = ")";
+                line.insert(it, minus0.begin(), minus0.end());
+            }
+        }
+        last = *it;
+        it++;
     }
-
-    string s = queue.back();
-    Number* leftNumber= new Number((double)(stoi(queue.front())));
-    queue.pop_back();
-    queue.pop_front();
-
-    if (s.compare("^") == 0) {
-        return new Power(leftNumber, expressionFromString(queue));
-    }
-
-     else if (s.compare("*") == 0) {
-        return new Multiplication(leftNumber, expressionFromString(queue));
-    }
-
-    else if (s.compare("/") == 0) {
-        return new Division(leftNumber, expressionFromString(queue));
-    }
-
-    else if (s.compare("+") == 0) {
-        return new Plus(leftNumber, expressionFromString(queue));
-    }
-
-    else if (s.compare("-") == 0) {
-        return new Minus(leftNumber, expressionFromString(queue));
-    }
-    else {
-        return new Number((double)(stoi(queue.back())));
-    }
-
+    return line;
 }
 
+double ReadLines::expressionFromString(deque<string> queue) {
+    if (queue.size() == 1) { // end of function, resault in queue
+        return stod(queue.front());
+    }
+    string last, op;
+    double first, second;
+    deque<string>::iterator it = queue.begin();
+    while (operators.count(*it) == 0) { // skip while it's not an operator
+        it++;
+    }
+    // take 2 numbers before operator
+    first = stod(*(it - 2)); 
+    second = stod(*(it - 1));
+    // delete them from queue
+    it=queue.erase(it - 1);
+    it = queue.erase(it - 1);
+    op = *it; // save operator
+    it = queue.erase(it); // delete operator from queue
+    // calculate with 2 numbers, push result to queue
+    if (op.compare("+") == 0) {
+        queue.push_front(to_string(first + second));
+    }
+    else if (op.compare("-") == 0) {
+        queue.push_front(to_string(first - second));
+    }
+    else if (op.compare("*") == 0) {
+        queue.push_front(to_string(first * second));
+    }
+    else if (op.compare("/") == 0) {
+        queue.push_front(to_string(first / second));
+    }
+    else if (op.compare("^") == 0) {
+        queue.push_front(to_string(pow(first, second)));
+    }
+    return expressionFromString(queue); // continue with new queue
+}
+
+
+
 deque<string> ReadLines::shuntingYard(string expression) {
-    stack<char> stack;
+    stack<string> stack;
     deque<string> queue;
     string::iterator it = expression.begin();
-    char topStack;
-    string currentNumber = "";
+    string topStack, currentNumber = "", currentChar;
     while (it != expression.end()) { // while there are tokens to be read
-
+        currentChar = string(1, *it);
         if (*it == '(') {
-            stack.push(*it);
+            stack.push(currentChar);
         }
 
-        else if (operators.count(*it)) { // if it's an operator
+        else if (operators.count(currentChar)) { // if it's an operator
             if (!stack.empty()) {
                 topStack = stack.top();
-                while (operators[topStack] > operators[*it]) { // while there's an operator at top of the stack with greater precedence
-                    stack.pop();               // pop operator from stack
-                    queue.push_back(string(1, topStack)); // push it to the queue
-                    topStack = stack.top();
+                if (topStack != "(") {
+
+                    while (operators[topStack] > operators[currentChar]) { // while there's an operator at top of the stack with greater precedence
+                        stack.pop();               // pop operator from stack
+                        queue.push_back(topStack); // push it to the queue
+                        if (stack.empty()) {
+                            break;
+                        }
+                        topStack = stack.top();
+                    }
                 }
             }
-            stack.push(*it);
+            stack.push(currentChar);
         }
 
         else if (*it == ')') {
-            while (stack.top() != '(') { // while there's not a '(' at the top of the stack
-                queue.push_back(string(1, stack.top())); // push it to the queue
+            while (stack.top() != "(") { // while there's not a '(' at the top of the stack
+                queue.push_back(stack.top()); // push it to the queue
                 stack.pop();                  // pop operator from stack
 
             }
@@ -144,9 +184,9 @@ deque<string> ReadLines::shuntingYard(string expression) {
 
         else { // it is a number
             currentNumber += *it;
-            while ((++it)!= expression.end()&& *it >= 48 && *it <= 57) { // while the char is a number
+            while ((++it) != expression.end() && *it >= 48 && *it <= 57) { // while the char is a number
                 currentNumber += *it;
-         
+
             }
             queue.push_back(currentNumber);  // push the number to queue
             currentNumber = "";
@@ -157,7 +197,7 @@ deque<string> ReadLines::shuntingYard(string expression) {
     }
     // there's no more token to be read
     while (!stack.empty()) { // while there's an operator at the top of the stack
-        queue.push_back(string(1, stack.top())); // push it to the queue
+        queue.push_back(stack.top()); // push it to the queue
         stack.pop();                  // pop operator from stack
     }
     return queue;

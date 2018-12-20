@@ -21,7 +21,8 @@ public:
     vector<string> lexer(string line);
     void parser(vector<string> line);
     deque<string> shuntingYard(string expression);
-    Expression* expressionFromString(deque<string> queue);
+    double expressionFromString(deque<string> queue);
+    string negativeNumberToMinus(string line);
 };
 
 #endif 

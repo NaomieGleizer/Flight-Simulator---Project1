@@ -2,7 +2,7 @@
 #include <thread>
 
 
-void OpenDataServerCommand::setParams(vector<double> params) {
+void OpenDataServerCommand:: setParams(vector<double> params) {
     this->params = params;
 }
 

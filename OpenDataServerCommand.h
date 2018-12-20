@@ -6,5 +6,4 @@ class OpenDataServerCommand : public Command {
 public:
     void execute();
     void setParams(vector<double> params);
-
 };
