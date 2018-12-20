@@ -9,7 +9,7 @@ double ExpressionCommand::calculate() {
     return 1.0;
 }
 
-Command* ExpressionCommand::getCommand() {
-    return command;
+void ExpressionCommand::setParams(vector<double> params) {
+    command->setParams(params);
 }
 

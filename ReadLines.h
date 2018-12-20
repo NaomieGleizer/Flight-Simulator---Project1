@@ -21,7 +21,7 @@ public:
     vector<string> lexer(string line);
     void parser(vector<string> line);
     deque<string> shuntingYard(string expression);
-    Expression expressionFromString(deque<string> queue);
+    Expression* expressionFromString(deque<string> queue);
 };
 
 #endif 

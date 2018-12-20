@@ -3,7 +3,7 @@
 
 class Power : public BinaryExpression {
 public:
-    Power(Expression left, Expression right);
+    Power(Expression* left, Expression* right);
 
     double calculate();
 };

@@ -9,8 +9,8 @@
 #include "Number.h"
 
 map<char, int> operators = { { '^', 4 },{ '/', 3 },{ '*', 3 },{ '+', 2 },{ '-', 2 } };
-map<string, Expression> commands = {
-    { "openDataServer", ExpressionCommand(new OpenDataServerCommand()) }//,
+map<string, ExpressionCommand*> commands = {
+    { "openDataServer", new ExpressionCommand(new OpenDataServerCommand()) }//,
     //{"connect", ExpressionCommand(new ConnectCommand())}
 };
 
@@ -31,18 +31,23 @@ vector<string> ReadLines::lexer(string line) {
 
     string param = "";
     char last = 0;
+    bool isComma=false;
     while (it != line.end()) {
         if (param.size() != 0) {
             last = param.at(param.size() - 1); // last character inserted
         }
-        if (*it == 32 || *it == 9) { // if it's a space or a tab, check if it's the end of the parameter
-            if (operators.count(last) == 0 && param != "") {
+        if (*it == 32 || *it == 9 || (*it) == ',') { // if it's a space or a tab, check if it's the end of the parameter
+            if ((*it) == ',') { // flag for end of current parameter
+                isComma = true;
+            }
+            it++; // skip char
+            // if last char wasn't an operator or current char isn't an operator, or if there is a comma
+            if ((operators.count(last) == 0 && operators.count(*it)==0 && param != "") || isComma) {
                 // end of parameter
                 splittedStrings.push_back(param); // insert the parameter to the vector
                 param = ""; // new parameter
                 last = 0;
             }
-            it++;
             continue;
         }
         param += *it; // add char to the current parameter
@@ -58,49 +63,48 @@ void ReadLines::parser(vector<string> line) {
     if (commands.count(line[0]) == 0) { // chek if the command exists
         return;
     }
-    Expression expCommand = commands[line[0]];
+    ExpressionCommand* expCommand = commands[line[0]];
 
     for (int i = 1; i <= line.size() - 1; i++) { // for each parameter
         deque<string> queue = shuntingYard(line[i]);
-        Expression param = expressionFromString(queue);
-        params.push_back(param.calculate());
+        Expression* param = expressionFromString(queue);
+        params.push_back((*param).calculate());
     }
-    //expCommand.setParams(params);
-    expCommand.calculate();
+    expCommand->setParams(params);
+    (*expCommand).calculate();
 }
 
-Expression ReadLines::expressionFromString(deque<string> queue) {
+Expression* ReadLines::expressionFromString(deque<string> queue) {
     if (queue.size() == 1) {
-        return Number((double)(stoi(queue.back())));
+        return new Number((double)(stoi(queue.back())));;
     }
 
     string s = queue.back();
-    Number leftNumber((double)(stoi(queue.front())));
+    Number* leftNumber= new Number((double)(stoi(queue.front())));
     queue.pop_back();
     queue.pop_front();
 
     if (s.compare("^") == 0) {
-        return Power(leftNumber, expressionFromString(queue));
+        return new Power(leftNumber, expressionFromString(queue));
     }
 
-    else if (s.compare("*") == 0) {
-        Expression e = expressionFromString(queue);
-        return Multiplication(leftNumber, e);
+     else if (s.compare("*") == 0) {
+        return new Multiplication(leftNumber, expressionFromString(queue));
     }
 
     else if (s.compare("/") == 0) {
-        return Division(leftNumber, expressionFromString(queue));
+        return new Division(leftNumber, expressionFromString(queue));
     }
 
     else if (s.compare("+") == 0) {
-        return Plus(leftNumber, expressionFromString(queue));
+        return new Plus(leftNumber, expressionFromString(queue));
     }
 
-    else if (s.compare("*") == 0) {
-        return Minus(leftNumber, expressionFromString(queue));
+    else if (s.compare("-") == 0) {
+        return new Minus(leftNumber, expressionFromString(queue));
     }
     else {
-        return Number((double)(stoi(queue.back())));
+        return new Number((double)(stoi(queue.back())));
     }
 
 }

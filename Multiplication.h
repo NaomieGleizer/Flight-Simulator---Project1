@@ -3,7 +3,7 @@
 
 class Multiplication : public BinaryExpression {
 public:
-    Multiplication(Expression left, Expression right);
+    Multiplication(Expression* left, Expression* right);
 
     double calculate() override;
 };

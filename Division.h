@@ -3,7 +3,7 @@
 
 class Division : public BinaryExpression {
 public:
-    Division(Expression left, Expression right);
+    Division(Expression* left, Expression* right);
 
     double calculate() override;
 };

@@ -1,3 +1,5 @@
-﻿  ReadLines.cpp
-c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\readlines.cpp(63): warning C4018: '<=': signed/unsigned mismatch
+﻿  test.cpp
+  ReadLines.cpp
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\readlines.cpp(68): warning C4018: '<=': signed/unsigned mismatch
+  Generating Code...
   ProjectA.vcxproj -> C:\Users\naomie\Documents\בר אילן\תכנות מתקדם\ProjectA\Debug\ProjectA.exe

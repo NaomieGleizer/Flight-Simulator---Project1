@@ -3,10 +3,10 @@
 
 class BinaryExpression : public Expression {
 protected:
-    Expression left;
-    Expression right;
+    Expression *left;
+    Expression *right;
 public:
-    BinaryExpression(Expression left, Expression right) {
+    BinaryExpression(Expression* left, Expression* right) {
         this->left = left;
         this->right = right;
     }
