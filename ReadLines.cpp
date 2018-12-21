@@ -125,19 +125,19 @@ double ReadLines::expressionFromString(deque<string> queue) {
     it = queue.erase(it); // delete operator from queue
     // calculate with 2 numbers, push result to queue
     if (op.compare("+") == 0) {
-        queue.push_front(to_string(first + second));
+        queue.insert(it,to_string(first + second));
     }
     else if (op.compare("-") == 0) {
-        queue.push_front(to_string(first - second));
+        queue.insert(it,to_string(first - second));
     }
     else if (op.compare("*") == 0) {
-        queue.push_front(to_string(first * second));
+        queue.insert(it,to_string(first * second));
     }
     else if (op.compare("/") == 0) {
-        queue.push_front(to_string(first / second));
+        queue.insert(it,to_string(first / second));
     }
     else if (op.compare("^") == 0) {
-        queue.push_front(to_string(pow(first, second)));
+        queue.insert(it,to_string(pow(first, second)));
     }
     return expressionFromString(queue); // continue with new queue
 }
