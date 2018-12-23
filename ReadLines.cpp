@@ -1,79 +1,120 @@
 #include "ReadLines.h"
 #include <stack>
 #include <deque>
+#include <ctype.h>
 #include "Power.h"
 #include "Minus.h"
 #include "Plus.h"
 #include "Multiplication.h"
 #include "Division.h"
 #include "Number.h"
+#include "LoopCommand.h"
+#include "SetVariableCommand.h"
 
-map<string, int> operators = { { "^", 4 },{ "/", 3 },{ "*", 3 },{ "+", 2 },{ "-", 2 } };
-map<string, ExpressionCommand*> commands = {
-    { "openDataServer", new ExpressionCommand(new OpenDataServerCommand()) }//,
-    //{"connect", ExpressionCommand(new ConnectCommand())}
-};
-
-map<string, double> symbolTbl;
+map<string, int> operators = { { "^", 4 }, { "/", 3 }, { "*", 3 }, { "+", 2 }, { "-", 2 } };
 
 /*
-*   The function gets a string which is a command line from the user and seperates it.
+*   The function gets a vector of strings when each string is a command line from the user and seperates it.
 */
-vector<string> ReadLines::lexer(string line) {
+vector<string> ReadLines::lexer(vector<string> lines) {
     vector<string> splittedStrings;
-    string::iterator it = line.begin();
-    string command = "";
-    while (*it != 32 && *it != 9) { // command (first word)
-        command += *it;
-        it++;
-    }
-    splittedStrings.push_back(command);
-
-    string param = "";
-    char last = 0;
+    string::iterator it;
+    string param;;
+    char last;
     bool isComma = false;
-    while (it != line.end()) {
-        if (param.size() != 0) {
-            last = param.at(param.size() - 1); // last character inserted
-        }
-        if (*it == 32 || *it == 9 || (*it) == ',') { // if it's a space or a tab, check if it's the end of the parameter
-            if ((*it) == ',') { // flag for end of current parameter
-                isComma = true;
+    for (int i = 0; i < lines.size(); i++) { // for every line
+        it = lines[i].begin();
+        param = "";
+        last = 0;
+        while (it != lines[i].end()) { // go over a line
+            if (param.size() != 0) {
+                last = param.at(param.size() - 1); // last character inserted
             }
-            it++; // skip char
-            // if last char wasn't an operator or current char isn't an operator, or if there is a comma
-            if ((operators.count(string(1, last)) == 0 && operators.count(string(1, *it)) == 0 && param != "") || isComma) {
-                // end of parameter
-                splittedStrings.push_back(param); // insert the parameter to the vector
-                param = ""; // new parameter
-                last = 0;
+            if (*it == 32 || *it == 9 || (*it) == ',') { // if it's a space or a tab, check if it's the end of the parameter
+                if ((*it) == ',') { // flag for end of current parameter
+                    isComma = true;
+                }
+                it++; // skip char
+                // if last char wasn't an operator or current char isn't an operator, or if there is a comma
+                if ((operators.count(string(1, last)) == 0 && operators.count(string(1, *it)) == 0 && param != "" && (*it) != ')')
+                    || isComma) {
+                    // end of parameter
+                    splittedStrings.push_back(param); // insert the parameter to the vector
+                    param = ""; // new parameter
+                    last = 0;
+                }
+                continue;
             }
-            continue;
+            if (*it == '}' || *it == '{') {
+                break;
+            }
+            param += *it; // add char to the current parameter
+            it++;
         }
-        param += *it; // add char to the current parameter
-        it++;
+        if (param != "") {
+            splittedStrings.push_back(param);
+        }
     }
-    splittedStrings.push_back(param);
     return splittedStrings;
 }
 
 void ReadLines::parser(vector<string> line) {
     vector<double> params;
 
-    if (commands.count(line[0]) == 0) { // chek if the command exists
+    if (expCommands.count(line[0]) == 0 && symbolTbl.count(line[0]) == 0) { // chek if the command exists
+        throw "No such command: " + line[0];
         return;
     }
-    ExpressionCommand* expCommand = commands[line[0]];
 
-    for (int i = 1; i <= line.size() - 1; i++) { // for each parameter
-        // take care of negativr numbers in the parameter
-        line[i] = negativeNumberToMinus(line[i]);
-        deque<string> queue = shuntingYard(line[i]);
-        double param = expressionFromString(queue);
-        params.push_back(param);
+    ExpressionCommand* expCommand = NULL;
+    if (expCommands.count(line[0])) {  // Expression command from map
+        expCommand = expCommands[line[0]];
     }
-    expCommand->setParams(params);
+    else { // setting a variable (for example throttle=5)
+        expCommand = new ExpressionCommand(new SetVariableCommand(line[0]));
+    }
+    /*
+    if (line[0].compare("openDataServer") == 0) {
+    struct MyParams* arg = new MyParams();
+    arg->port = params[0];
+    arg->hz = params[1];
+    pthread_join(*(this->t), nullptr);
+    }
+    */
+    if (isLoopCommand(line[0])) { // if it is a condition command with multiple lines
+        ConditionParser* conditionParser;
+        list<Command*> commands;
+        Command* command = NULL;
+        vector<string>::iterator it = line.begin();
+        vector<string> params;
+        while ((++it) != line.end()) {
+            if (expCommands.count(*it)) {  // new command line
+                command->setParams(params); // set params of current command
+                commands.push_back(command); // add to command to list
+                command = expCommands[*it]->getCommand(); // get new command 
+                params.clear();
+            }
+            else if (symbolTbl.count(*it)) { // new command line
+                expCommand->setParams(params); // set params of current command
+                commands.push_back(expCommand->getCommand()); // add to command to list
+                expCommand = expCommands[*it]; // get new command 
+                params.clear();
+            }
+            else {
+                params.push_back(*it);
+            }
+        }
+    }
+    else { // one line of command
+        line.erase(line.begin()); // remove command from line
+        expCommand->setParams(line); // send rest of line as parameters
+    }
     (*expCommand).calculate();
+}
+
+
+bool ReadLines::isLoopCommand(string command) {
+    return command.compare("while") == 0 || command.compare("for") == 0 || command.compare("if") == 0;
 }
 
 /*
@@ -89,12 +130,17 @@ string ReadLines::negativeNumberToMinus(string line) {
             if (last == '(') {
                 minus0 = "0";
                 line.insert(it, minus0.begin(), minus0.end());
-                it += 3; // skip the '-', the number and the ')'
+                while (*it != ')') {
+                    it++; // skip the '-', the number and the ')'
+                }
             }
             else {
                 minus0 = "(0";
                 line.insert(it, minus0.begin(), minus0.end());
-                it += 4; // skip the '(', the 0, the '-' and the number
+                it += 3; // skip the '(', the 0, and the '-'
+                while (isdigit(*it)) {
+                    it++; // skip the number
+                }
                 minus0 = ")";
                 line.insert(it, minus0.begin(), minus0.end());
             }
@@ -105,7 +151,7 @@ string ReadLines::negativeNumberToMinus(string line) {
     return line;
 }
 
-double ReadLines::expressionFromString(deque<string> queue) {
+double ReadLines::calculateExpressionFromQueue(deque<string> queue) {
     if (queue.size() == 1) { // end of function, resault in queue
         return stod(queue.front());
     }
@@ -116,30 +162,30 @@ double ReadLines::expressionFromString(deque<string> queue) {
         it++;
     }
     // take 2 numbers before operator
-    first = stod(*(it - 2)); 
+    first = stod(*(it - 2));
     second = stod(*(it - 1));
     // delete them from queue
-    it=queue.erase(it - 1);
+    it = queue.erase(it - 1);
     it = queue.erase(it - 1);
     op = *it; // save operator
     it = queue.erase(it); // delete operator from queue
     // calculate with 2 numbers, push result to queue
     if (op.compare("+") == 0) {
-        queue.insert(it,to_string(first + second));
+        queue.insert(it, to_string(first + second));
     }
     else if (op.compare("-") == 0) {
-        queue.insert(it,to_string(first - second));
+        queue.insert(it, to_string(first - second));
     }
     else if (op.compare("*") == 0) {
-        queue.insert(it,to_string(first * second));
+        queue.insert(it, to_string(first * second));
     }
     else if (op.compare("/") == 0) {
-        queue.insert(it,to_string(first / second));
+        queue.insert(it, to_string(first / second));
     }
     else if (op.compare("^") == 0) {
-        queue.insert(it,to_string(pow(first, second)));
+        queue.insert(it, to_string(pow(first, second)));
     }
-    return expressionFromString(queue); // continue with new queue
+    return calculateExpressionFromQueue(queue); // continue with new queue
 }
 
 
@@ -201,4 +247,8 @@ deque<string> ReadLines::shuntingYard(string expression) {
         stack.pop();                  // pop operator from stack
     }
     return queue;
+}
+
+bool ReadLines::isInMapCommands(string s) {
+    return expCommands.count(s)!=0;
 }

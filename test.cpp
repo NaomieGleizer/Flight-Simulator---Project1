@@ -2,7 +2,8 @@
 
 int main() {
     ReadLines r;
-    vector<string> s= r.lexer("openDataServer 3*(-4)+5 10");
+    vector<string> v = { "openDataServer 5-8+3 10" };
+    vector<string> s= r.lexer(v);
     r.parser(s);
     return 0;
 }

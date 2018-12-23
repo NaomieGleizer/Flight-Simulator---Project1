@@ -8,6 +8,7 @@ class ExpressionCommand : public Expression {
     vector<double> params;
 public:
     ExpressionCommand(Command* command);
-    void setParams(vector<double> params);
+    void setParams(vector<string> params);
     double calculate() override;
+    Command* getCommand();
 };
