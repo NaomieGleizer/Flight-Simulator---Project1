@@ -4,7 +4,7 @@
 
 class ConditionParser : public Command {
 protected:
-    list<Command*> commands;
+    list<vector<string>> linesCommand;
     vector<string> condition;
 public:
     //ConditionParser()
