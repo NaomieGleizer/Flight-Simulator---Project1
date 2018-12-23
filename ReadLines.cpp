@@ -7,6 +7,7 @@
 #include "Multiplication.h"
 #include "Division.h"
 #include "Number.h"
+#include "SetVariableCommand.h"
 #include <math.h>
 
 
@@ -18,66 +19,67 @@ struct MyParams
 
 map<string, int> operators = { { "^", 4 },{ "/", 3 },{ "*", 3 },{ "+", 2 },{ "-", 2 } };
 
-map<string, double> symbolTbl;
 
 /*
 *   The function gets a string which is a command line from the user and seperates it.
 */
-vector<string> ReadLines::lexer(string line) {
+vector<string> ReadLines::lexer(vector<string> lines) {
     vector<string> splittedStrings;
-    string::iterator it = line.begin();
-    string command = "";
-    while (*it != 32 && *it != 9) { // command (first word)
-        command += *it;
-        it++;
-    }
-    splittedStrings.push_back(command);
-
+    string::iterator it;
     string param = "";
     char last = 0;
     bool isComma = false;
-    while (it != line.end()) {
-        if (param.size() != 0) {
-            last = param.at(param.size() - 1); // last character inserted
-        }
-        if (*it == 32 || *it == 9 || (*it) == ',') { // if it's a space or a tab, check if it's the end of the parameter
-            if ((*it) == ',') { // flag for end of current parameter
-                isComma = true;
+    for (int i = 0; i < lines.size(); i++) { // for every line
+        it = lines[i].begin();
+        while (it != lines[i].end()) { // go over a line
+            if (param.size() != 0) {
+                last = param.at(param.size() - 1); // last character inserted
             }
-            it++; // skip char
-                  // if last char wasn't an operator or current char isn't an operator, or if there is a comma
-            if ((operators.count(string(1, last)) == 0 && operators.count(string(1, *it)) == 0 && param != "") || isComma) {
-                // end of parameter
-                splittedStrings.push_back(param); // insert the parameter to the vector
-                param = ""; // new parameter
-                last = 0;
+            if (*it == 32 || *it == 9 || (*it) == ',') { // if it's a space or a tab, check if it's the end of the parameter
+                if ((*it) == ',') { // flag for end of current parameter
+                    isComma = true;
+                }
+                it++; // skip char
+                      // if last char wasn't an operator or current char isn't an operator, or if there is a comma
+                if ((operators.count(string(1, last)) == 0 && operators.count(string(1, *it)) == 0 && param != "" && *it != ')')
+                    || isComma) {
+                    // end of parameter
+                    splittedStrings.push_back(param); // insert the parameter to the vector
+                    param = ""; // new parameter
+                    last = 0;
+                }
+                continue;
             }
-            continue;
+            if (*it == '{' || *it == '}') {
+                break;
+            }
+            param += *it; // add char to the current parameter
+            it++;
         }
-        param += *it; // add char to the current parameter
-        it++;
     }
-    splittedStrings.push_back(param);
+    if (param != "") {
+        splittedStrings.push_back(param);
+    }
     return splittedStrings;
 }
 
 void ReadLines::parser(vector<string> line) {
     vector<double> params;
 
-    if (commands.count(line[0]) == 0) { // chek if the command exists
+    if (expCommands.count(line[0]) == 0 || symbolTbl.count(line[0]) == 0) { // chek if the command exists
+        printf("There is no such command");
         return;
     }
-    ExpressionCommand* expCommand = commands[line[0]];
-
-
-    for (int i = 1; i <= line.size() - 1; i++) { // for each parameter
-                                                 // take care of negativr numbers in the parameter
-        line[i] = negativeNumberToMinus(line[i]);
-        deque<string> queue = shuntingYard(line[i]);
-        double param = expressionFromString(queue);
-        params.push_back(param);
+    ExpressionCommand* expCommand;
+    if (expCommands.count(line[0])) {
+        expCommand = expCommands[line[0]];
     }
-    expCommand->setParams(params);
+    else {
+        expCommand = new ExpressionCommand(new SetVariableCommand(line[0]));
+    }
+
+    line.erase(line.begin());
+    expCommand->setParams(line);
     (*expCommand).calculate();
     /*
     if (line[0].compare("openDataServer") == 0) {
@@ -103,12 +105,19 @@ string ReadLines::negativeNumberToMinus(string line) {
             if (last == '(') {
                 minus0 = "0";
                 line.insert(it, minus0.begin(), minus0.end());
-                it += 3; // skip the '-', the number and the ')'
+                it++; // skip the '-'
+                while (isdigit(*it)) { // skip the number
+                    it++;
+                }
+                it++; // skip the ')'
             }
             else {
                 minus0 = "(0";
                 line.insert(it, minus0.begin(), minus0.end());
-                it += 4; // skip the '(', the 0, the '-' and the number
+                it += 3; // skip the '(', the 0, and the '-' 
+                while (isdigit(*it)) { // skip the number
+                    it++;
+                }
                 minus0 = ")";
                 line.insert(it, minus0.begin(), minus0.end());
             }
@@ -119,7 +128,7 @@ string ReadLines::negativeNumberToMinus(string line) {
     return line;
 }
 
-double ReadLines::expressionFromString(deque<string> queue) {
+double ReadLines::calculateExpressionFromQueue(deque<string> queue) {
     if (queue.size() == 1) { // end of function, resault in queue
         return stod(queue.front());
     }
@@ -137,7 +146,7 @@ double ReadLines::expressionFromString(deque<string> queue) {
     it = queue.erase(it - 1);
     op = *it; // save operator
     it = queue.erase(it); // delete operator from queue
-                          // calculate with 2 numbers, push result to queue
+    // calculate with 2 numbers, push result to queue
     if (op.compare("+") == 0) {
         queue.push_front(to_string(first + second));
     }
@@ -153,7 +162,7 @@ double ReadLines::expressionFromString(deque<string> queue) {
     else if (op.compare("^") == 0) {
         queue.push_front(to_string(pow(first, second)));
     }
-    return expressionFromString(queue); // continue with new queue
+    return calculateExpressionFromQueue(queue); // continue with new queue
 }
 
 

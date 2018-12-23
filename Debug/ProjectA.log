@@ -1,2 +1,11 @@
 ﻿  test.cpp
-  ProjectA.vcxproj -> C:\Users\naomie\Documents\בר אילן\תכנות מתקדם\ProjectA\Debug\ProjectA.exe
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\datareaderserver.h(8): fatal error C1083: Cannot open include file: 'unistd.h': No such file or directory
+  openDataServerCommand.cpp
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\datareaderserver.h(8): fatal error C1083: Cannot open include file: 'unistd.h': No such file or directory
+  ReadLines.cpp
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\datareaderserver.h(8): fatal error C1083: Cannot open include file: 'unistd.h': No such file or directory
+  LoopCommand.cpp
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\datareaderserver.h(8): fatal error C1083: Cannot open include file: 'unistd.h': No such file or directory
+  ConnectCommand.cpp
+c:\users\naomie\documents\בר אילן\תכנות מתקדם\projecta\projecta\connectcommand.h(5): fatal error C1083: Cannot open include file: 'unistd.h': No such file or directory
+  Generating Code...
